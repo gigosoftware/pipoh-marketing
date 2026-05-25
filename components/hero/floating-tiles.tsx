@@ -46,7 +46,10 @@ export function FloatingTiles({ tiles }: FloatingTilesProps) {
     <div
       ref={containerRef}
       aria-hidden
-      className="pointer-events-none absolute inset-0 grid p-8 gap-4"
+      // Mobile (<md): tiles hidden · Hero shows headline+CTAs only for clean
+      // mobile presentation + perf budget. Desktop (md+): full 12×8 grid.
+      // Founder cravamento Phase 1.2 TASK 10 · option A · perf-first.
+      className="pointer-events-none absolute inset-0 hidden md:grid p-8 gap-4"
       style={{
         gridTemplateColumns: "repeat(12, 1fr)",
         gridTemplateRows: "repeat(8, 1fr)",

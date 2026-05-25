@@ -128,3 +128,35 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================================
+ * Phase 1.2 · scroll-driven section reveal · CSS-only · zero JS.
+ *
+ * Pattern: any element tagged `.section-reveal` fades up as it enters the
+ * viewport. Stagger across cards via inline `style={{ "--reveal-delay": "Nms" }}`.
+ *
+ * Compat:
+ *   - Chrome 115+ · Safari 17+ · Edge 115+ → smooth fade in
+ *   - Firefox (no flag) · Safari < 17 → content is visible immediately
+ *     (the @supports gate keeps fallback visible · non-breaking degradation)
+ *   - prefers-reduced-motion: reduce → fallback visible (no animation)
+ *
+ * Uses the `section-fade` keyframe declared in @theme {} above.
+ * ========================================================================== */
+.section-reveal {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .section-reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: section-fade 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30%;
+      animation-delay: var(--reveal-delay, 0ms);
+    }
+  }
+}
