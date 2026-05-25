@@ -11,6 +11,13 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "studio.pipoh.ai" },
     ],
   },
+  experimental: {
+    // Day 44 Phase 1.3 polish · barrel-import optimization. Reduces the JS
+    // chunk shipped for icon-heavy / motion-heavy pages by importing only the
+    // specific named exports actually used. Tree-shake support sometimes
+    // misses CJS-styled re-exports · this guarantees the trim.
+    optimizePackageImports: ["lucide-react", "motion"],
+  },
 };
 
 export default nextConfig;
