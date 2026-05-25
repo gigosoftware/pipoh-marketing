@@ -60,7 +60,8 @@ export async function getHeroTiles(): Promise<HeroTile[]> {
       kind: "video",
       id: "reel",
       videoUrl: "/hero/tile-2.webm",
-      videoUrlMp4: "/hero/tile-2.mp4",
+      // Day 44 cravamento · WebM-only ship · MP4 fallback skipped (Chrome/Safari/Firefox
+      // modern all support WebM · ~98% browsers). Re-add videoUrlMp4 if legacy compat needed.
       posterUrl: "/hero/tile-2-poster.webp",
       aspect: "16:9",
       alt: "Reel cinematic motion · Kling Standard",
@@ -80,7 +81,7 @@ export async function getHeroTiles(): Promise<HeroTile[]> {
       kind: "video",
       id: "stage",
       videoUrl: "/hero/tile-4.webm",
-      videoUrlMp4: "/hero/tile-4.mp4",
+      // WebM-only ship · MP4 fallback skipped (see tile-2 comment above).
       posterUrl: "/hero/tile-4-poster.webp",
       aspect: "9:16",
       alt: "Stage vertical motion · Veo 3.1 Fast",
