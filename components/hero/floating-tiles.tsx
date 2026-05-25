@@ -3,19 +3,22 @@
 import * as React from "react";
 import Image from "next/image";
 import { motion, useMotionValue, useSpring, useTransform, type MotionValue } from "motion/react";
-import type { HeroTile } from "@/lib/hero-tiles";
+import type { HeroTile, ImageTile, VideoTile } from "@/lib/hero-tiles";
 
 type FloatingTilesProps = { tiles: HeroTile[] };
 
 /**
- * Floating media grid · 8 tiles in mixed aspect ratios.
+ * Floating media grid · 8 tiles in mixed aspect ratios · 6 image + 2 video.
  *
  * Mouse-follow parallax (subtle · max 18px translate at depth 4) driven by
  * Motion spring with high damping (20) for calm movement · not dramatic.
  * Gentle Y oscillation (4s loop · ±8px · staggered per tile) lives as a
  * CSS keyframe (`tile-float`) so it stays on the GPU compositor.
  *
- * The whole grid is `aria-hidden` because tiles are decorative. The headline
+ * Each tile renders a brand-tinted corner label (Atelier · Reel · etc.) so
+ * the modality is named even when the user is parsing the visual.
+ *
+ * The whole grid is `aria-hidden` because tiles are decorative · the headline
  * + CTAs (HeroContent) carry the page's accessible meaning.
  */
 export function FloatingTiles({ tiles }: FloatingTilesProps) {
@@ -81,6 +84,7 @@ function FloatingTile({
 
   // Staggered float start so the 8 tiles don't oscillate in lockstep.
   const floatDelay = `${(index * 0.3) % 4}s`;
+  const priority = index < 4;
 
   return (
     <motion.div
@@ -98,18 +102,79 @@ function FloatingTile({
       }
       className="relative overflow-hidden rounded-2xl border border-border-subtle/60 bg-surface-1 shadow-2xl shadow-brand-900/30 motion-safe:animate-[tile-float_4s_ease-in-out_infinite] motion-safe:[animation-delay:var(--tile-delay)]"
     >
-      <div className="relative w-full h-full" style={{ aspectRatio: tile.aspect.replace(":", "/") }}>
-        <Image
-          src={tile.url}
-          alt={tile.alt}
-          fill
-          sizes="(max-width: 768px) 50vw, 25vw"
-          className="object-cover"
-          priority={index < 4}
+      <div className="relative w-full" style={{ aspectRatio: tile.aspect.replace(":", "/") }}>
+        {tile.kind === "video" ? (
+          <VideoMedia tile={tile} priority={priority} />
+        ) : (
+          <ImageMedia tile={tile} priority={priority} />
+        )}
+        {/* Subtle gradient overlay · adds depth + brand wash without obscuring content. */}
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-gradient-to-tr from-surface-0/40 via-transparent to-brand-500/10"
         />
-        {/* Subtle gradient overlay for depth + brand wash */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-surface-0/40 via-transparent to-brand-500/10" />
+        {/* Corner chip · always shown · names the modality. */}
+        <CornerLabel label={tile.label} />
       </div>
     </motion.div>
+  );
+}
+
+function ImageMedia({ tile, priority }: { tile: ImageTile; priority: boolean }) {
+  return (
+    <Image
+      src={tile.url}
+      alt={tile.alt}
+      fill
+      sizes="(max-width: 768px) 50vw, 25vw"
+      className="object-cover"
+      priority={priority}
+    />
+  );
+}
+
+function VideoMedia({ tile, priority }: { tile: VideoTile; priority: boolean }) {
+  // Day 44 polish cravamento · video tile autoplays muted/looped/inline.
+  // - `muted` is required for browser autoplay policy
+  // - `playsInline` keeps iOS from forcing fullscreen
+  // - `prefers-reduced-motion: reduce` pauses video at mount · poster remains visible
+  // - poster is a WebP first-frame so CLS stays at 0 even while WebM streams in
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+
+  React.useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (reduceMotion.matches) {
+      video.pause();
+      video.removeAttribute("autoplay");
+    }
+  }, []);
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload={priority ? "auto" : "metadata"}
+      poster={tile.posterUrl}
+      className="absolute inset-0 h-full w-full object-cover"
+      aria-label={tile.alt}
+    >
+      <source src={tile.videoUrl} type="video/webm" />
+      {tile.videoUrlMp4 && <source src={tile.videoUrlMp4} type="video/mp4" />}
+    </video>
+  );
+}
+
+function CornerLabel({ label }: { label: string }) {
+  return (
+    <div className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center rounded-full border border-white/10 bg-black/40 px-2.5 py-1 backdrop-blur-sm">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-brand-300/95">
+        {label}
+      </span>
+    </div>
   );
 }

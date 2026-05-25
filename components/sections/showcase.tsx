@@ -21,14 +21,22 @@ export async function Showcase() {
       headline="Real creations · refreshed daily."
       sub="A live snapshot from the Pipoh community. Click any to see how it was made."
     >
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+      {/*
+        Day 44 polish · grid items align to top within row so tiles
+        of different aspect ratios DON'T stretch to max row height
+        (CSS grid default is stretch · which overrides aspect-ratio).
+        With items-start on the grid, each tile renders at its own
+        natural height per aspect-ratio · no more letterbox bands
+        when a 4/3 tile shares a row with a 9/16 tile.
+      */}
+      <div className="grid grid-cols-2 items-start gap-3 md:grid-cols-3 lg:grid-cols-4">
         {items.slice(0, 12).map((item, i) => (
           <Link
             key={item.id}
             href={`https://studio.pipoh.ai/explore/${item.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="section-reveal group relative block overflow-hidden rounded-xl bg-surface-2"
+            className="section-reveal group relative block self-start overflow-hidden rounded-xl bg-surface-2"
             style={
               {
                 "--reveal-delay": `${(i % 4) * 60}ms`,
