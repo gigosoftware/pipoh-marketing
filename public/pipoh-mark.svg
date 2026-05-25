@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="pipoh-grad" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="oklch(0.78 0.08 15)" />
+      <stop offset="1" stop-color="oklch(0.50 0.10 15)" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#pipoh-grad)" />
+  <path d="M22 16h12.5c5.7 0 10 4.1 10 9.8s-4.3 9.8-10 9.8H28v12.4h-6V16zm6 14.6h6.5c2.5 0 4.4-1.9 4.4-4.8s-1.9-4.8-4.4-4.8H28v9.6z" fill="oklch(0.98 0.005 15)" />
+</svg>

@@ -1,26 +1,130 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ============================================================================
+ * Pipoh Marketing · brand tokens shared with studio (manual sync · Day 44).
+ * Source of truth: pipoh/src/app/globals.css (full studio palette).
+ * Marketing site = subset · only what hero/sections need.
+ *
+ * Identity: dusty rose hue 15 · oklch chroma 0.08–0.12.
+ * Dark mode is default · marketing favors immersive dark feel.
+ *
+ * Tier separation (matches studio):
+ *   @theme {}        — static tokens identical in both modes (brand, motion, keyframes)
+ *   @theme inline {} — references raw vars below so utilities resolve per-mode
+ *   :root { }        — light fallback values for the dual-mode tokens
+ *   .dark { }        — dark values applied via <html className="dark">
+ * ========================================================================== */
+@theme {
+  /* Brand · Dusty Rose · same in light and dark */
+  --color-brand-50:  oklch(0.96 0.02 15);
+  --color-brand-300: oklch(0.78 0.08 15);
+  --color-brand-500: oklch(0.65 0.11 15);
+  --color-brand-700: oklch(0.50 0.10 15);
+  --color-brand-900: oklch(0.30 0.08 15);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Motion · single source of transition durations */
+  --duration-fast:   100ms;
+  --duration-normal: 180ms;
+  --duration-slow:   240ms;
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Floating tile gentle Y oscillation · hero only · 4s loop · ±8px */
+  --animate-tile-float: tile-float 4s ease-in-out infinite;
+
+  @keyframes tile-float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+
+  /* Hero headline reveal · plays on mount · 800ms cubic-bezier */
+  --animate-hero-reveal: hero-reveal 800ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+
+  @keyframes hero-reveal {
+    0%   { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Section fade-in on scroll trigger · reserved for Phase 1.2 sections */
+  --animate-section-fade: section-fade 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+
+  @keyframes section-fade {
+    0%   { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  /* Surfaces · text · borders · resolve per mode via cascade.
+   * Utility classes generated: bg-surface-0, text-text-primary,
+   * border-border-subtle, etc. */
+  --color-surface-0:      var(--surface-0);
+  --color-surface-1:      var(--surface-1);
+  --color-surface-2:      var(--surface-2);
+  --color-text-primary:   var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted:     var(--text-muted);
+  --color-border-subtle:  var(--border-subtle);
+  --color-border-default: var(--border-default);
+
+  /* Typography · Geist Sans + Geist Mono per studio BRAND_DECISIONS.
+   * next/font/google injects --font-geist-sans/-mono via the Geist
+   * package; fallback chain only activates if the woff2 fails to load. */
+  --font-sans: var(--font-geist-sans), "Inter", system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), "JetBrains Mono", "SF Mono", Menlo,
+    Consolas, monospace;
+}
+
+/* ============================================================================
+ * LIGHT MODE · rarely seen (dark is default) but present for accessibility.
+ * Warm off-white with a hint of dusty rose chroma to keep brand continuity.
+ * ========================================================================== */
+:root {
+  --surface-0:      oklch(0.975 0.005 15);
+  --surface-1:      oklch(1 0 0);
+  --surface-2:      oklch(0.94 0.005 15);
+  --text-primary:   oklch(0.20 0 0);
+  --text-secondary: oklch(0.40 0 0);
+  --text-muted:     oklch(0.55 0 0);
+  --border-subtle:  oklch(0.92 0.005 15);
+  --border-default: oklch(0.86 0.005 15);
+}
+
+/* ============================================================================
+ * DARK MODE · marketing default · immersive premium feel.
+ * Surfaces neutral grays with hint chroma · the dusty rose accent carries
+ * brand identity via brand-* tokens above.
+ * ========================================================================== */
+.dark {
+  --surface-0:      oklch(0.12 0.005 15);
+  --surface-1:      oklch(0.16 0.008 15);
+  --surface-2:      oklch(0.20 0.010 15);
+  --text-primary:   oklch(0.97 0 0);
+  --text-secondary: oklch(0.78 0 0);
+  --text-muted:     oklch(0.58 0 0);
+  --border-subtle:  oklch(0.25 0 0);
+  --border-default: oklch(0.35 0 0);
+}
+
+@layer base {
+  body {
+    background: var(--surface-0);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01", "ss03";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Respect reduced motion · zero all animations + transitions.
+ * Hero reveal + tile float + scroll fades all collapse to static state. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

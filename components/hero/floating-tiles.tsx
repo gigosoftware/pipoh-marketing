@@ -1,0 +1,112 @@
+"use client";
+
+import * as React from "react";
+import Image from "next/image";
+import { motion, useMotionValue, useSpring, useTransform, type MotionValue } from "motion/react";
+import type { HeroTile } from "@/lib/hero-tiles";
+
+type FloatingTilesProps = { tiles: HeroTile[] };
+
+/**
+ * Floating media grid · 8 tiles in mixed aspect ratios.
+ *
+ * Mouse-follow parallax (subtle · max 18px translate at depth 4) driven by
+ * Motion spring with high damping (20) for calm movement · not dramatic.
+ * Gentle Y oscillation (4s loop · ±8px · staggered per tile) lives as a
+ * CSS keyframe (`tile-float`) so it stays on the GPU compositor.
+ *
+ * The whole grid is `aria-hidden` because tiles are decorative. The headline
+ * + CTAs (HeroContent) carry the page's accessible meaning.
+ */
+export function FloatingTiles({ tiles }: FloatingTilesProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  // Spring smoothing · subtle damping so parallax glides rather than darts.
+  const springX = useSpring(mouseX, { stiffness: 50, damping: 20 });
+  const springY = useSpring(mouseY, { stiffness: 50, damping: 20 });
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handleMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      // Normalize cursor position to -1..1 around section center.
+      const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+      const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
+      mouseX.set(x);
+      mouseY.set(y);
+    };
+    el.addEventListener("mousemove", handleMove);
+    return () => el.removeEventListener("mousemove", handleMove);
+  }, [mouseX, mouseY]);
+
+  return (
+    <div
+      ref={containerRef}
+      aria-hidden
+      className="pointer-events-none absolute inset-0 grid p-8 gap-4"
+      style={{
+        gridTemplateColumns: "repeat(12, 1fr)",
+        gridTemplateRows: "repeat(8, 1fr)",
+      }}
+    >
+      {tiles.map((tile, i) => (
+        <FloatingTile key={tile.id} tile={tile} index={i} springX={springX} springY={springY} />
+      ))}
+    </div>
+  );
+}
+
+function FloatingTile({
+  tile,
+  index,
+  springX,
+  springY,
+}: {
+  tile: HeroTile;
+  index: number;
+  springX: MotionValue<number>;
+  springY: MotionValue<number>;
+}) {
+  // Stagger parallax depth per tile · 6 / 10 / 14 / 18px max translate.
+  // Further-out tiles drift more → reinforces depth perception.
+  const depth = (index % 4) * 4 + 6;
+  const x = useTransform(springX, [-1, 1], [-depth, depth]);
+  const y = useTransform(springY, [-1, 1], [-depth, depth]);
+
+  // Staggered float start so the 8 tiles don't oscillate in lockstep.
+  const floatDelay = `${(index * 0.3) % 4}s`;
+
+  return (
+    <motion.div
+      // Cast through `unknown` because Motion's `style` accepts MotionValue
+      // for `x`/`y` while CSSProperties doesn't, and CSSProperties has no
+      // typing for the `--tile-delay` custom property. Both are valid at
+      // runtime · this is the canonical Motion + custom-property workaround.
+      style={
+        {
+          x,
+          y,
+          gridArea: tile.gridArea,
+          "--tile-delay": floatDelay,
+        } as unknown as React.CSSProperties
+      }
+      className="relative overflow-hidden rounded-2xl border border-border-subtle/60 bg-surface-1 shadow-2xl shadow-brand-900/30 motion-safe:animate-[tile-float_4s_ease-in-out_infinite] motion-safe:[animation-delay:var(--tile-delay)]"
+    >
+      <div className="relative w-full h-full" style={{ aspectRatio: tile.aspect.replace(":", "/") }}>
+        <Image
+          src={tile.url}
+          alt={tile.alt}
+          fill
+          sizes="(max-width: 768px) 50vw, 25vw"
+          className="object-cover"
+          priority={index < 4}
+        />
+        {/* Subtle gradient overlay for depth + brand wash */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-surface-0/40 via-transparent to-brand-500/10" />
+      </div>
+    </motion.div>
+  );
+}
