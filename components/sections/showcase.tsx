@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Section } from "@/components/ui/section";
 import { getShowcaseItems } from "@/lib/showcase";
@@ -22,12 +21,20 @@ export async function Showcase() {
       sub="A live snapshot from the Pipoh community. Click any to see how it was made."
     >
       {/*
-        Day 44 polish · grid items align to top within row so tiles
-        of different aspect ratios DON'T stretch to max row height
-        (CSS grid default is stretch · which overrides aspect-ratio).
-        With items-start on the grid, each tile renders at its own
-        natural height per aspect-ratio · no more letterbox bands
-        when a 4/3 tile shares a row with a 9/16 tile.
+        Day 44 polish round 2 · masonry approach · trust each thumbnail's
+        NATURAL aspect ratio (not the declared aspectRatio metadata).
+        Studio API returns aspectRatio per creation but some creations have
+        thumbnails generated at a different aspect (e.g. videos with
+        landscape posters in 9:16-declared rows) which created tall black
+        tiles before. By dropping forced aspect-ratio and letting plain
+        <img> render natural · we get true masonry · zero broken tiles ·
+        every creation honored as it actually exists.
+
+        Trade-off · loses next/image optimization (resizing · WebP/AVIF
+        conversion). Acceptable here because:
+        - Showcase is below the fold · zero LCP impact
+        - Thumbnails are already optimized by studio (Cloudflare R2 CDN)
+        - Bandwidth delta is small (12 thumbs · ~50KB each)
       */}
       <div className="grid grid-cols-2 items-start gap-3 md:grid-cols-3 lg:grid-cols-4">
         {items.slice(0, 12).map((item, i) => (
@@ -40,17 +47,16 @@ export async function Showcase() {
             style={
               {
                 "--reveal-delay": `${(i % 4) * 60}ms`,
-                aspectRatio: item.aspect || "1 / 1",
               } as React.CSSProperties
             }
           >
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={item.thumbnailUrl}
               alt={item.alt || "Pipoh creation"}
-              fill
-              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover transition-transform duration-240 ease-default group-hover:scale-[1.04]"
               loading="lazy"
+              decoding="async"
+              className="block h-auto w-full object-cover transition-transform duration-240 ease-default group-hover:scale-[1.04]"
             />
             <div
               aria-hidden

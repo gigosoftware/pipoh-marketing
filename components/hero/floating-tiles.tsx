@@ -102,20 +102,28 @@ function FloatingTile({
       }
       className="relative overflow-hidden rounded-2xl border border-border-subtle/60 bg-surface-1 shadow-2xl shadow-brand-900/30 motion-safe:animate-[tile-float_4s_ease-in-out_infinite] motion-safe:[animation-delay:var(--tile-delay)]"
     >
-      <div className="relative w-full" style={{ aspectRatio: tile.aspect.replace(":", "/") }}>
-        {tile.kind === "video" ? (
-          <VideoMedia tile={tile} priority={priority} />
-        ) : (
-          <ImageMedia tile={tile} priority={priority} />
-        )}
-        {/* Subtle gradient overlay · adds depth + brand wash without obscuring content. */}
-        <div
-          aria-hidden
-          className="absolute inset-0 bg-gradient-to-tr from-surface-0/40 via-transparent to-brand-500/10"
-        />
-        {/* Corner chip · always shown · names the modality. */}
-        <CornerLabel label={tile.label} />
-      </div>
+      {/*
+        Day 44 polish cravamento · tile FILLS its grid cell · NO inner
+        aspect-ratio wrapper. Grid cells have shapes dictated by their
+        gridArea (e.g. 3 rows × 2 cols ≈ 2:3) which usually doesn't
+        match the creation's natural aspect (e.g. 9:16 portrait).
+        Image + Video use `object-cover` so the creation crops naturally
+        to fit the cell · zero dark bands. The `tile.aspect` field stays
+        as metadata (alt semantic + tile placement intent) but doesn't
+        force inner sizing anymore.
+      */}
+      {tile.kind === "video" ? (
+        <VideoMedia tile={tile} priority={priority} />
+      ) : (
+        <ImageMedia tile={tile} priority={priority} />
+      )}
+      {/* Subtle gradient overlay · adds depth + brand wash without obscuring content. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-gradient-to-tr from-surface-0/40 via-transparent to-brand-500/10"
+      />
+      {/* Corner chip · always shown · names the modality. */}
+      <CornerLabel label={tile.label} />
     </motion.div>
   );
 }
