@@ -21,29 +21,36 @@ export async function Showcase() {
       sub="A live snapshot from the Pipoh community. Click any to see how it was made."
     >
       {/*
-        Day 44 polish round 2 · masonry approach · trust each thumbnail's
-        NATURAL aspect ratio (not the declared aspectRatio metadata).
-        Studio API returns aspectRatio per creation but some creations have
-        thumbnails generated at a different aspect (e.g. videos with
-        landscape posters in 9:16-declared rows) which created tall black
-        tiles before. By dropping forced aspect-ratio and letting plain
-        <img> render natural · we get true masonry · zero broken tiles ·
-        every creation honored as it actually exists.
+        Day 44 polish round 3 · CSS multi-column masonry · Pinterest/Leonardo-style.
+        Previous `grid + items-start` approach left vertical gaps below shorter
+        tiles because grid row height = tallest tile in the row. Switching to
+        `columns-N` flows each tile into an independent column · the next tile
+        starts immediately after the previous one ends · zero black gaps even
+        with wildly different aspect ratios (1:1, 3:4, 9:16, 16:9 all pack
+        together cleanly).
 
-        Trade-off · loses next/image optimization (resizing · WebP/AVIF
-        conversion). Acceptable here because:
-        - Showcase is below the fold · zero LCP impact
-        - Thumbnails are already optimized by studio (Cloudflare R2 CDN)
-        - Bandwidth delta is small (12 thumbs · ~50KB each)
+        Implementation notes:
+        - `columns-2` / `md:columns-3` / `lg:columns-4` → column-count per BP
+        - `gap-X` on the container → column-gap
+        - `break-inside-avoid` on each tile → never split a tile across columns
+        - `mb-X` on each tile → vertical rhythm inside a column (column flow
+          ignores gap-Y; margin-bottom is how you get spacing between stacked
+          items in CSS columns)
+        - `inline-block` is a Safari guardrail · pre-15 versions sometimes
+          mis-calculate column heights when children are block-level
+
+        Visual order: tiles flow top-to-bottom in column 1, then column 2, etc.
+        (column-major, vs grid's row-major). Doesn't matter here · creations
+        are unordered.
       */}
-      <div className="grid grid-cols-2 items-start gap-3 md:grid-cols-3 lg:grid-cols-4">
+      <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
         {items.slice(0, 12).map((item, i) => (
           <Link
             key={item.id}
             href={`https://studio.pipoh.ai/explore/${item.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="section-reveal group relative block self-start overflow-hidden rounded-xl bg-surface-2"
+            className="section-reveal group relative mb-3 inline-block w-full break-inside-avoid overflow-hidden rounded-xl bg-surface-2"
             style={
               {
                 "--reveal-delay": `${(i % 4) * 60}ms`,
