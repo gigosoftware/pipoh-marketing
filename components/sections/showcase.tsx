@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Play } from "lucide-react";
 import { Section } from "@/components/ui/section";
 import { getShowcaseItems } from "@/lib/showcase";
 
@@ -8,6 +9,12 @@ import { getShowcaseItems } from "@/lib/showcase";
  * ISR cached 24h via `getShowcaseItems`. If the upstream API fails or
  * returns zero items, the section unmounts itself rather than rendering
  * an empty grid (founder cravamento "no broken UI in prod").
+ *
+ * Day 45 cravamento · video items now render real Cloudflare Stream
+ * frames (mapper dispatches by `kind` and picks `thumbnailUrl`/Stream
+ * for videos). A small "Video" chip overlays the top-left of each video
+ * tile · honest signaling that this is motion content without obscuring
+ * the frame itself.
  */
 export async function Showcase() {
   const items = await getShowcaseItems();
@@ -22,26 +29,9 @@ export async function Showcase() {
     >
       {/*
         Day 44 polish round 3 · CSS multi-column masonry · Pinterest/Leonardo-style.
-        Previous `grid + items-start` approach left vertical gaps below shorter
-        tiles because grid row height = tallest tile in the row. Switching to
-        `columns-N` flows each tile into an independent column · the next tile
-        starts immediately after the previous one ends · zero black gaps even
-        with wildly different aspect ratios (1:1, 3:4, 9:16, 16:9 all pack
-        together cleanly).
-
-        Implementation notes:
-        - `columns-2` / `md:columns-3` / `lg:columns-4` → column-count per BP
-        - `gap-X` on the container → column-gap
-        - `break-inside-avoid` on each tile → never split a tile across columns
-        - `mb-X` on each tile → vertical rhythm inside a column (column flow
-          ignores gap-Y; margin-bottom is how you get spacing between stacked
-          items in CSS columns)
-        - `inline-block` is a Safari guardrail · pre-15 versions sometimes
-          mis-calculate column heights when children are block-level
-
-        Visual order: tiles flow top-to-bottom in column 1, then column 2, etc.
-        (column-major, vs grid's row-major). Doesn't matter here · creations
-        are unordered.
+        Tiles flow into independent columns · zero black gaps between adjacent
+        tiles of mixed aspect ratios. See lib/showcase.ts for the URL dispatch
+        + dud-thumbnail HEAD filter.
       */}
       <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
         {items.slice(0, 12).map((item, i) => (
@@ -65,6 +55,14 @@ export async function Showcase() {
               decoding="async"
               className="block h-auto w-full object-cover transition-transform duration-240 ease-default group-hover:scale-[1.04]"
             />
+
+            {item.kind === "video" && (
+              <div className="pointer-events-none absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+                <Play className="size-3 fill-white" aria-hidden />
+                Video
+              </div>
+            )}
+
             <div
               aria-hidden
               className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100"
