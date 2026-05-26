@@ -1,6 +1,8 @@
 export type ShowcaseItem = {
   id: string;
   thumbnailUrl: string;
+  /** "image" or "video" · drives the Video badge overlay in showcase.tsx. */
+  kind?: "image" | "video";
   /** CSS aspect-ratio (e.g. "3 / 4" or "16 / 9"). */
   aspect?: string;
   alt?: string;
@@ -17,8 +19,9 @@ export type ShowcaseItem = {
 const EXPLORE_API = "https://studio.pipoh.ai/api/explore?limit=24";
 
 /** Minimum content-length (bytes) to treat a thumbnail as a real image.
- * Real WebPs at 600×338+ run 50–250 KB. Dud placeholders weigh ~448 B.
- * 5 KB clears the duds with a comfortable margin. */
+ * Real WebPs at 600×338+ run 50–250 KB · Cloudflare Stream JPGs at 720p
+ * run ~30–80 KB. Dud placeholders weigh ~448 B. 5 KB clears the duds with
+ * a comfortable margin without rejecting any legit thumbnail format. */
 const MIN_THUMB_BYTES = 5000;
 
 /** HEAD-check timeout per URL · keeps a slow CDN from blocking the ISR build. */
@@ -28,15 +31,25 @@ const HEAD_TIMEOUT_MS = 2000;
  * Phase 1.2 cravamento · build-time ISR fetch of the public Explore feed.
  * Revalidates every 24h (86400s) per founder cravamento Q3 Day 44.
  *
- * Real API shape (verified via curl on Phase 0):
- *   { items: [{ id, thumbnailUrl, mediumUrl, prompt, modelLabel, aspectRatio, ... }] }
+ * Real API shape (verified via curl on Phase 0 + Day 45 re-probe):
+ *   { items: [{ id, kind, thumbnailUrl, mediumUrl, fullUrl, prompt,
+ *               modelLabel, aspectRatio, streamUid, streamReady, ... }] }
  *
- * We use `mediumUrl` (~512px) over `thumbnailUrl` (~256px) for the 4-col grid
- * sharpness on retina. Falls back to thumbnailUrl if mediumUrl is missing.
+ * Day 45 Stream wire cravamento (studio PR #240):
+ *   - Video items: `thumbnailUrl` = Cloudflare Stream URL with auto-extracted
+ *     frame at t=2s (real preview frame · not the legacy branded-gradient).
+ *   - Video items: `mediumUrl` still serves the legacy R2 branded-gradient
+ *     placeholder (kept studio-side as a deeper fallback when Stream isn't ready).
+ *   - Image items: `mediumUrl` (~512px R2 WebP) > `thumbnailUrl` (~256px) for
+ *     retina sharpness on the 4-col grid.
  *
- * Day 44 polish round 2 cravamento · HEAD-check each candidate in parallel
- * and drop the duds (content-length < 5 KB ≈ placeholder/error WebP). This
- * stops the "3 black tiles" pattern founder caught on smoke local.
+ * So the source URL choice is `kind`-dispatched:
+ *   - kind="video" → `thumbnailUrl` (Stream frame · the whole point of round 4)
+ *   - kind="image" → `mediumUrl` (retina WebP) with `thumbnailUrl` as fallback
+ *
+ * Day 44 polish round 2 cravamento · HEAD-check each chosen URL in parallel
+ * and drop the duds (content-length < 5 KB ≈ placeholder/error). This stops
+ * the "3 black tiles" pattern founder caught on smoke local.
  *
  * Soft-fail to [] on any error · the Showcase component renders null on
  * empty (no broken grid in prod).
@@ -57,15 +70,26 @@ export async function getShowcaseItems(): Promise<ShowcaseItem[]> {
     const mapped: ShowcaseItem[] = raw
       .filter((x): x is Record<string, unknown> => typeof x === "object" && x !== null)
       .map((x) => {
-        const thumbnailUrl =
-          (typeof x.mediumUrl === "string" && x.mediumUrl) ||
-          (typeof x.thumbnailUrl === "string" && x.thumbnailUrl) ||
-          "";
+        const rawKind = typeof x.kind === "string" ? x.kind : "";
+        const kind: "image" | "video" | undefined =
+          rawKind === "video" ? "video" : rawKind === "image" ? "image" : undefined;
+
+        const streamUrl = typeof x.thumbnailUrl === "string" ? x.thumbnailUrl : "";
+        const r2MediumUrl = typeof x.mediumUrl === "string" ? x.mediumUrl : "";
+
+        // Day 45 cravamento · video items prefer Stream URL (real frame).
+        // Image items prefer R2 medium (retina) and fall back to thumbnail.
+        const chosenUrl =
+          kind === "video"
+            ? streamUrl || r2MediumUrl
+            : r2MediumUrl || streamUrl;
+
         const aspectRatio = typeof x.aspectRatio === "string" ? x.aspectRatio : "";
         const promptText = typeof x.prompt === "string" ? x.prompt : "";
         return {
           id: typeof x.id === "string" ? x.id : "",
-          thumbnailUrl,
+          thumbnailUrl: chosenUrl,
+          kind,
           // Normalize "3:4" → "3 / 4" for CSS aspect-ratio.
           aspect: aspectRatio ? aspectRatio.replace(":", " / ") : undefined,
           alt: promptText ? promptText.slice(0, 100) : undefined,
@@ -79,7 +103,7 @@ export async function getShowcaseItems(): Promise<ShowcaseItem[]> {
     if (mapped.length === 0) return [];
 
     // Parallel HEAD checks · all 24 fired at once · max wait = slowest single
-    // HEAD (typically ~40 ms over Cloudflare R2 CDN) plus the 2 s timeout cap.
+    // HEAD (typically ~40 ms over Cloudflare R2/Stream) plus the 2 s timeout cap.
     const aliveFlags = await Promise.all(mapped.map((item) => isValidThumbnail(item.thumbnailUrl)));
     const filtered = mapped.filter((_, i) => aliveFlags[i]);
 
