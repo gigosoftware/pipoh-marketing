@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Manifesto — Pipoh",
   description:
     "Why Pipoh exists. The creative studio for makers who want premium AI without the fragmentation.",
+  alternates: { canonical: "/manifesto" },
   openGraph: {
     title: "Pipoh — Why we exist",
     description:

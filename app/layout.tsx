@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+import { JsonLd } from "@/components/seo/json-ld";
+import { organizationSchema, webSiteSchema } from "@/lib/structured-data";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -43,7 +46,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {/* Sitewide structured data · Organization + WebSite (Day 48) */}
+        <JsonLd data={[organizationSchema(), webSiteSchema()]} />
+        {children}
+      </body>
     </html>
   );
 }

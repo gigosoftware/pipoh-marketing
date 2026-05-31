@@ -1,31 +1,8 @@
 import { Section } from "@/components/ui/section";
 
-const FAQS = [
-  {
-    q: "Can I cancel any time?",
-    a: "Yes. Cancel from Console · Wallet. Your remaining Pips stay in your wallet · use them up at your own pace. No clawback, no fine print.",
-  },
-  {
-    q: "Do unused Pips expire?",
-    a: "No · they roll over up to your plan's rollover cap. Free plan doesn't carry, but every paid plan does. Pause and resume creation without losing what you bought.",
-  },
-  {
-    q: "What happens if I run out of Pips mid-month?",
-    a: "Buy a top-up pack (Essential and above) · land in seconds, generate immediately. Or wait for your cycle reset · happens monthly on your sign-up date.",
-  },
-  {
-    q: "Is video included in every plan?",
-    a: "Video unlocks at Essential ($10/mo). Free is image-only. Reel and Stage models are Essential+. Premium tier (Atelier exclusive) gets earlier access to new video models.",
-  },
-  {
-    q: "Can I edit and upscale my generations?",
-    a: "Yes · Darkroom (8 hand-picked filters), Splice (video editing), Upscale to 4K/8K (Essential+), and Outpaint (Essential+) are integrated. No need to download and switch tools.",
-  },
-  {
-    q: "Do you offer custom plans for studios?",
-    a: "Atelier ($499/mo) is built for studios. For volume above 200K Pips/month or custom needs, email hi@pipoh.ai · we'll build something with you.",
-  },
-];
+// Day 48 · FAQS lifted to lib/faqs.ts so this accordion + the FAQPage
+// JSON-LD on /pricing share one source (no drift). Render is unchanged.
+import { FAQS } from "@/lib/faqs";
 
 export function PricingFAQ() {
   return (
